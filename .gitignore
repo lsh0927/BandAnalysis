@@ -1,0 +1,13 @@
+# Backend
+backend/HELP.md
+backend/target/
+backend/.gradle/
+backend/build/
+backend/*.log
+
+# Frontend
+frontend/node_modules/
+frontend/.env
+frontend/dist
+frontend/build
+frontend/.env.local

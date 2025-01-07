@@ -1,0 +1,16 @@
+version: '3.8'
+services:
+  db:
+    image: postgres:latest
+    container_name: band-analysis-db
+    environment:
+      POSTGRES_DB: band_analysis
+      POSTGRES_USER: band_user
+      POSTGRES_PASSWORD: band_password
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+volumes:
+  postgres_data:
