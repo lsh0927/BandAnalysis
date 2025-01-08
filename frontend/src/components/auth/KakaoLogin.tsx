@@ -1,51 +1,18 @@
-// import { useState } from 'react'
-// import reactLogo from './assets/react.svg'
-// import viteLogo from '/vite.svg'
-// import './App.css'
-
-// function App() {
-//   const [count, setCount] = useState(0)
-
-//   return (
-//     <>
-//       <div>
-//         <a href="https://vite.dev" target="_blank">
-//           <img src={viteLogo} className="logo" alt="Vite logo" />
-//         </a>
-//         <a href="https://react.dev" target="_blank">
-//           <img src={reactLogo} className="logo react" alt="React logo" />
-//         </a>
-//       </div>
-//       <h1>Vite + React</h1>
-//       <div className="card">
-//         <button onClick={() => setCount((count) => count + 1)}>
-//           count is {count}
-//         </button>
-//         <p>
-//           Edit <code>src/App.tsx</code> and save to test HMR
-//         </p>
-//       </div>
-//       <p className="read-the-docs">
-//         Click on the Vite and React logos to learn more
-//       </p>
-//     </>
-//   )
-// }
-
-// export default App
 import { useState, useEffect, createContext } from 'react';
 
-interface AuthContextType {
+// Auth Context Type
+type AuthContextType = {
   isAuthenticated: boolean;
-  token: string | null;  // 여기가 중요합니다 - string도 허용하도록 수정
+  token: string | null;
   login: (token: string) => void;
   logout: () => void;
 }
 
+// Create Auth Context
 export const AuthContext = createContext<AuthContextType>({
   isAuthenticated: false,
   token: null,
-  login: () => {},
+  login: (_: string) => {},
   logout: () => {}
 });
 
@@ -107,7 +74,7 @@ const Dashboard = () => {
 
 // Main App Component
 const App = () => {
-  const [currentPage, setCurrentPage] = useState('login');
+  const [currentPage, setCurrentPage] = useState<'login' | 'dashboard'>('login');
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [token, setToken] = useState<string | null>(null);
 
@@ -117,6 +84,30 @@ const App = () => {
       setToken(savedToken);
       setIsAuthenticated(true);
       setCurrentPage('dashboard');
+    }
+
+    // Handle OAuth callback
+    const params = new URLSearchParams(window.location.search);
+    const code = params.get('code');
+    
+    if (code) {
+      fetch('http://localhost:8080/api/auth/kakao', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ code })
+      })
+      .then(response => response.json())
+      .then(data => {
+        if (data.token) {
+          handleLoginSuccess(data.token);
+        }
+      })
+      .catch(error => {
+        console.error('Login error:', error);
+        setCurrentPage('login');
+      });
     }
   }, []);
 
@@ -134,46 +125,15 @@ const App = () => {
     setCurrentPage('login');
   };
 
-  useEffect(() => {
-    const handleHashChange = async () => {
-      if (window.location.search.includes('code=')) {
-        const params = new URLSearchParams(window.location.search);
-        const code = params.get('code');
-        
-        if (code) {
-          try {
-            const response = await fetch('http://localhost:8080/api/auth/kakao', {
-              method: 'POST',
-              headers: {
-                'Content-Type': 'application/json',
-              },
-              body: JSON.stringify({ code }),
-            });
-
-            if (response.ok) {
-              const data = await response.json();
-              handleLoginSuccess(data.token);
-            }
-          } catch (error) {
-            console.error('Login error:', error);
-            setCurrentPage('login');
-          }
-        }
-      }
-    };
-
-    handleHashChange();
-  }, []);
-
-  const contextValue: AuthContextType = {
-    isAuthenticated,
-    token,
-    login: handleLoginSuccess,
-    logout: handleLogout
-  };
-
   return (
-    <AuthContext.Provider value={contextValue}>
+    <AuthContext.Provider 
+      value={{
+        isAuthenticated,
+        token,
+        login: handleLoginSuccess,
+        logout: handleLogout
+      }}
+    >
       <div className="min-h-screen bg-gray-50">
         {currentPage === 'login' && !isAuthenticated && (
           <Login onLoginSuccess={handleLoginSuccess} />
